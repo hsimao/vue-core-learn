@@ -1,0 +1,124 @@
+<style>
+  .red {
+    color: red;
+  }
+
+  .green {
+    color: green;
+  }
+</style>
+
+<div id="app"></div>
+
+<script>
+  function h(tag, props, children) {
+    return {
+      tag,
+      props,
+      children
+    };
+  }
+
+  function mount(vnode, container) {
+    // prettier-ignore
+    const el = vnode.el = document.createElement(vnode.tag)
+
+    // props
+    if (vnode.props) {
+      for (const key in vnode.props) {
+        const value = vnode.props[key];
+        el.setAttribute(key, value);
+      }
+    }
+    // children
+    if (vnode.children) {
+      if (typeof vnode.children === "string") {
+        el.textContent = vnode.children;
+      } else {
+        vnode.children.forEach((child) => {
+          mount(child, el);
+        });
+      }
+    }
+
+    container.appendChild(el);
+  }
+
+  const vdom = h("div", { class: "red" }, [h("span", null, "hello")]);
+
+  mount(vdom, document.getElementById("app"));
+
+  function patch(n1, n2) {
+    if (n1.tag === n2.tag) {
+      // prettier-ignore
+      const el = n2.el = n1.el;
+
+      // props
+      const oldProps = n1.props || {};
+      const newProps = n2.props || {};
+
+      // 具有相同的 props key, 但 value 不同的情況
+      for (const key in newProps) {
+        const oldValue = oldProps[key];
+        const newValue = newProps[key];
+        if (newValue !== oldValue) {
+          el.setAttribute(key, newValue);
+        }
+      }
+
+      // props key 有異動的情況
+      for (const key in oldProps) {
+        if (!(key in newProps)) {
+          el.removeAttribute(key);
+        }
+      }
+
+      // children
+      const oldChildren = n1.children;
+      const newChildren = n2.children;
+      if (typeof newChildren === "string") {
+        if (typeof oldChildren === "string") {
+          // newChildren 跟 oldChildren 都是純文字, 且不相同則直接替換內容
+          if (newChildren !== oldChildren) {
+            el.textContent = newChildren;
+          }
+        } else {
+          // 原本 oldChildren 不是純文字, newChildren 是純文字, 則直接把當前 dom 更新
+          el.textContent = newChildren;
+        }
+      } else {
+        // newChildren 不是純文字, 但 oldChildren 是純文字
+        if (typeof oldChildren === "string") {
+          el.innerHTML = "";
+          newChildren.forEach((child) => {
+            mount(child, el);
+          });
+        } else {
+          // newChildren 跟 oldChildren 都不是純文字, 需要比較兩邊的陣列
+          const commonLength = Math.min(oldChildren.length, newChildren.length);
+          for (let i = 0; i < commonLength; i++) {
+            patch(oldChildren[i], newChildren[i]);
+          }
+
+          // 新增的 child 直接 mount
+          if (newChildren.length > oldChildren.length) {
+            newChildren.slice(oldChildren.length).forEach((child) => {
+              mount(child, el);
+            });
+          } else if (newChildren.length < oldChildren.length) {
+            // 刪除消失的 child
+            oldChildren.slice(newChildren.length).forEach((child) => {
+              el.removeChild(child.el);
+            });
+          }
+        }
+      }
+    } else {
+      // replace
+    }
+  }
+
+  const vdom2 = h("div", { class: "green" }, [h("span", null, "changed!")]);
+
+  patch(vdom, vdom2);
+</script>

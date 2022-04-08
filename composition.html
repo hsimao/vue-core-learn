@@ -1,0 +1,31 @@
+<script>
+  import { reacitve, watchEffect, watch, onMounted } from "vue";
+
+  function useFeature() {
+    onMounted(() => console.log("mounted!"));
+  }
+
+  export default {
+    setup() {
+      useFeature();
+
+      const state = reactive({ count: 0 });
+
+      watchEffect(() => console.log(state.count));
+
+      watch(
+        () => state.count,
+        (count, oldCount) => {}
+      );
+
+      onMounted(() => console.log("mounted!"));
+
+      return {
+        state,
+        increment: () => {
+          state.count++;
+        },
+      };
+    },
+  };
+</script>
